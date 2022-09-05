@@ -1,0 +1,39 @@
+{
+  "project_info": {
+    "project_number": "564819578099",
+    "project_id": "magpiesbook-87281",
+    "storage_bucket": "magpiesbook-87281.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:564819578099:android:8d616ea4128db28ea97b86",
+        "android_client_info": {
+          "package_name": "com.example.jojo"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "564819578099-amumq7detaqmc402fvmo03v3q8ungrt1.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCeYxFRi2ijIshaF8oEKCGTsBD2mK9EFAc"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "564819578099-amumq7detaqmc402fvmo03v3q8ungrt1.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
