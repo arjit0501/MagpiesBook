@@ -1,27 +1,21 @@
-
-
 import 'dart:convert';
 import 'dart:io';
 import 'dart:math';
-
 import 'package:agora_rtc_engine/rtc_engine.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:jojo/config/appId.dart';
-import 'package:jojo/provider/provider.dart';
 import 'package:jojo/resources/firestore_methods.dart';
 import 'package:jojo/screens/live_stream/responsive/reponsive_layout.dart';
-import 'package:jojo/screens/live_stream/screens/hopOn.dart';
+import 'package:jojo/screens/live_stream/screens/feed_screen/hop_on_page.dart';
 import 'package:jojo/screens/live_stream/widgets/chat.dart';
 import 'package:permission_handler/permission_handler.dart';
-import 'package:provider/provider.dart';
 import 'package:agora_rtc_engine/rtc_local_view.dart' as RtcLocalView;
 import 'package:agora_rtc_engine/rtc_remote_view.dart' as RtcRemoteView;
 import 'package:http/http.dart' as http;
 import 'package:flutter/physics.dart';
-
 
 class BroadcastScreen extends StatefulWidget {
   final bool isBroadcaster;
@@ -37,35 +31,37 @@ class BroadcastScreen extends StatefulWidget {
   State<BroadcastScreen> createState() => _BroadcastScreenState();
 }
 
-class _BroadcastScreenState extends State<BroadcastScreen> with WidgetsBindingObserver   {
+class _BroadcastScreenState extends State<BroadcastScreen>
+    with WidgetsBindingObserver {
   late final RtcEngine _engine;
   List<int> remoteUid = [];
   bool switchCamera = true;
   bool isMuted = false;
   bool isScreenSharing = false;
- late  String namee ;
-  late String uiid ;
-
-  bool hopOn= false ;
-  late String channelId ;
+  late String namee;
+  late String uiid;
 
 
+  late String channelId;
 
+  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
+  final FirebaseAuth _auth = FirebaseAuth.instance;
 
+  void onHopOn() async {
+    await _firestore
+        .collection('livestream')
+        .doc(widget.channelId).update({
+      'hopOn' : "tt",
+      'hopMan': _auth.currentUser!.uid
+    });
 
-  final  FirebaseFirestore _firestore = FirebaseFirestore.instance;
-  final FirebaseAuth _auth = FirebaseAuth.instance ;
+    setState(() {
 
-  void onHopOn() async{
-    DocumentSnapshot<Map<String, dynamic>> docc =  await _firestore.collection('livestream').doc(widget.channelId).collection('hopOn').doc(widget.channelId).get();
-    bool isHopOn = docc['isHopOn'];
-
-    hopOn = isHopOn ;
+    });
 
   }
 
   @override
-
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
@@ -74,7 +70,7 @@ class _BroadcastScreenState extends State<BroadcastScreen> with WidgetsBindingOb
   }
 
   @override
-  void dispose(){
+  void dispose() {
     WidgetsBinding.instance.removeObserver(this);
     super.dispose();
   }
@@ -86,10 +82,6 @@ class _BroadcastScreenState extends State<BroadcastScreen> with WidgetsBindingOb
       print('band ho gyi');
     }
   }
-
-
-
-
 
   void _initEngine() async {
     _engine = await RtcEngine.createWithContext(RtcEngineContext(appId));
@@ -109,7 +101,6 @@ class _BroadcastScreenState extends State<BroadcastScreen> with WidgetsBindingOb
   String baseUrl = "https://filam.herokuapp.com";
 
   String? token;
-
 
   Future<void> getToken() async {
     final res = await http.get(
@@ -135,25 +126,29 @@ class _BroadcastScreenState extends State<BroadcastScreen> with WidgetsBindingOb
     _engine.setEventHandler(
         RtcEngineEventHandler(joinChannelSuccess: (channel, uid, elapsed) {
           debugPrint('joinChannelSuccess $channel $uid $elapsed');
-        }, userJoined: (uid, elapsed) {
-          debugPrint('userJoined $uid $elapsed');
-          setState(() {
-            remoteUid.add(uid);
-          });
-        }, userOffline: (uid, reason) {
-          debugPrint('userOffline $uid $reason');
-          setState(() {
-            remoteUid.removeWhere((element) => element == uid);
-          });
-        }, leaveChannel: (stats) {
-          debugPrint('leaveChannel $stats');
-          setState(() {
-            remoteUid.clear();
-          });
-        }, tokenPrivilegeWillExpire: (token) async {
-          await getToken();
-          await _engine.renewToken(token);
-        }));
+        },
+            userJoined: (uid, elapsed) {
+              debugPrint('userJoined $uid $elapsed');
+              setState(() {
+                remoteUid.add(uid);
+              });
+            },
+            userOffline: (uid, reason) {
+              debugPrint('userOffline $uid $reason');
+              setState(() {
+                remoteUid.removeWhere((element) => element == uid);
+              });
+            },
+            leaveChannel: (stats) {
+              debugPrint('leaveChannel $stats');
+              setState(() {
+                remoteUid.clear();
+              });
+            },
+            tokenPrivilegeWillExpire: (token) async {
+              await getToken();
+              await _engine.renewToken(token);
+            }));
   }
 
   void _joinChannel() async {
@@ -230,38 +225,35 @@ class _BroadcastScreenState extends State<BroadcastScreen> with WidgetsBindingOb
   _leaveChannel() async {
     Navigator.pop(context);
     Navigator.pop(context);
-    DocumentSnapshot<Map<String, dynamic>> docc =  await  _firestore.collection('users').doc(_auth.currentUser!.uid).get();
+    DocumentSnapshot<Map<String, dynamic>> docc =
+    await _firestore.collection('users').doc(_auth.currentUser!.uid).get();
     var name = docc['name'];
     await _engine.leaveChannel();
-    if ('${_auth.currentUser!.uid}$name' ==
-        widget.channelId) {
+    if ('${_auth.currentUser!.uid}$name' == widget.channelId) {
       await FirestoreMethods().endLiveStream(widget.channelId);
     } else {
       await FirestoreMethods().updateViewCount(widget.channelId, false);
     }
-
   }
 
   _leaveChannel2() async {
     Navigator.pop(context);
-    DocumentSnapshot<Map<String, dynamic>> docc =  await  _firestore.collection('users').doc(_auth.currentUser!.uid).get();
+    DocumentSnapshot<Map<String, dynamic>> docc =
+    await _firestore.collection('users').doc(_auth.currentUser!.uid).get();
     var name = docc['name'];
     await _engine.leaveChannel();
-    if ('${_auth.currentUser!.uid}$name' ==
-        widget.channelId) {
+    if ('${_auth.currentUser!.uid}$name' == widget.channelId) {
       await FirestoreMethods().endLiveStream(widget.channelId);
     } else {
       await FirestoreMethods().updateViewCount(widget.channelId, false);
     }
-
   }
-
-
 
   @override
   Widget build(BuildContext context) {
-
-    final size = MediaQuery.of(context).size ;
+    final size = MediaQuery
+        .of(context)
+        .size;
 
     return WillPopScope(
       onWillPop: () async {
@@ -270,40 +262,46 @@ class _BroadcastScreenState extends State<BroadcastScreen> with WidgetsBindingOb
       },
       child: SafeArea(
         child: StreamBuilder<DocumentSnapshot?>(
-            stream:  _firestore.collection('livestream').doc(widget.channelId).snapshots() ,
+            stream: _firestore
+                .collection('livestream')
+                .doc(widget.channelId)
+                .snapshots(),
             builder: (context, snapshot) {
               if (snapshot.data != null) {
-                Map<String, dynamic> data = snapshot.data!.data() as Map<
-                    String,
-                    dynamic>;
+                Map<String, dynamic> data =
+                snapshot.data!.data() as Map<String, dynamic>;
                 var viewers = data['viewers'];
                 var usernamee = data['name'];
+                var hopOn = data['hopOn'];
+                var hopMan = data['hopMan'];
                 return Scaffold(
                   appBar: AppBar(
                     title: Text(usernamee.toString()),
                     actions: [
-                      IconButton(onPressed: () {}
-
-                          ,
+                      IconButton(
+                          onPressed: onHopOn,
                           icon: Icon(
-                            Icons.video_call_rounded, color: Colors.purple[300],
-                            size: 30,)),
+                            Icons.video_call_rounded,
+                            color: Colors.purple[300],
+                            size: 30,
+                          )),
                       Padding(
-                        padding: EdgeInsets.symmetric(
-                            horizontal: size.width * 0.1),
-                        child: Row(
-                            children: [
-                              Container(
-                                  padding: EdgeInsets.symmetric(horizontal: 5),
-                                  margin: EdgeInsets.symmetric(horizontal: 8),
-                                  decoration: BoxDecoration(
-                                      borderRadius: BorderRadius.circular(10),
-                                      color: Colors.redAccent
-                                  ), child: Text('Live')),
-                              Icon(Icons.remove_red_eye_outlined),
-                              SizedBox(width: size.width * 0.04,),
-                              Text(viewers.toString())
-                            ]),
+                        padding:
+                        EdgeInsets.symmetric(horizontal: size.width * 0.1),
+                        child: Row(children: [
+                          Container(
+                              padding: EdgeInsets.symmetric(horizontal: 5),
+                              margin: EdgeInsets.symmetric(horizontal: 8),
+                              decoration: BoxDecoration(
+                                  borderRadius: BorderRadius.circular(10),
+                                  color: Colors.redAccent),
+                              child: Text('Live')),
+                          Icon(Icons.remove_red_eye_outlined),
+                          SizedBox(
+                            width: size.width * 0.04,
+                          ),
+                          Text(viewers.toString())
+                        ]),
                       )
                     ],
                     elevation: 0,
@@ -312,13 +310,10 @@ class _BroadcastScreenState extends State<BroadcastScreen> with WidgetsBindingOb
                         gradient: LinearGradient(
                             begin: Alignment.topLeft,
                             end: Alignment.bottomRight,
-
-                            colors: [Colors.purple, Colors.blue]
-                        ),
+                            colors: [Colors.purple, Colors.blue]),
                       ),
                     ),
                   ),
-
                   body: Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 8),
                     child: ResponsiveLatout(
@@ -331,19 +326,18 @@ class _BroadcastScreenState extends State<BroadcastScreen> with WidgetsBindingOb
                                   _renderVideo(
                                       usernamee.toString(), isScreenSharing),
                                   if ("${_auth.currentUser!.uid}${usernamee
-                                      .toString()}" == widget.channelId)
+                                      .toString()}" ==
+                                      widget.channelId)
                                     Row(
-                                      mainAxisAlignment: MainAxisAlignment
-                                          .spaceEvenly,
+                                      mainAxisAlignment:
+                                      MainAxisAlignment.spaceEvenly,
                                       children: [
                                         InkWell(
                                             onTap: _switchCamera,
                                             child: switchCamera
-                                                ? Icon(
-                                                Icons.switch_camera_outlined)
-                                                : Icon(
-                                                Icons.switch_camera)
-                                        ),
+                                                ? Icon(Icons
+                                                .switch_camera_outlined)
+                                                : Icon(Icons.switch_camera)),
                                         InkWell(
                                           onTap: onToggleMute,
                                           child: isMuted
@@ -357,10 +351,8 @@ class _BroadcastScreenState extends State<BroadcastScreen> with WidgetsBindingOb
                                             child: isScreenSharing
                                                 ? Icon(
                                                 Icons.screen_share_outlined)
-                                                : Icon(
-                                                (Icons
-                                                    .stop_screen_share_outlined))
-                                        ),
+                                                : Icon((Icons
+                                                .stop_screen_share_outlined))),
                                       ],
                                     ),
                                 ],
@@ -375,76 +367,71 @@ class _BroadcastScreenState extends State<BroadcastScreen> with WidgetsBindingOb
                           height: size.height * 0.9,
                           width: size.width,
                           child: Column(
-
                             children: [
                               "${_auth.currentUser!.uid}${usernamee
                                   .toString()}" ==
-                                  widget.channelId ?
-                              Container(
+                                  widget.channelId
+                                  ? Container(
                                 width: double.infinity,
-
                                 decoration: BoxDecoration(
                                   borderRadius: BorderRadius.vertical(
-                                    bottom: Radius.circular(10),),
-                                  color: Colors.orangeAccent.withOpacity(0.5),
-
+                                    bottom: Radius.circular(10),
+                                  ),
+                                  color: Colors.orangeAccent
+                                      .withOpacity(0.5),
                                   gradient: LinearGradient(
                                       begin: Alignment.topLeft,
                                       end: Alignment.bottomRight,
-
                                       colors: [
                                         Colors.purple.withOpacity(0.7),
                                         Colors.blue.withOpacity(0.7)
-                                      ]
-                                  ),
+                                      ]),
                                 ),
                                 child: Row(
                                   mainAxisSize: MainAxisSize.min,
-                                  mainAxisAlignment: MainAxisAlignment
-                                      .spaceEvenly,
+                                  mainAxisAlignment:
+                                  MainAxisAlignment.spaceEvenly,
                                   children: [
                                     InkWell(
                                         onTap: _switchCamera,
                                         child: switchCamera
-                                            ? Icon(
-                                            Icons.switch_camera_outlined)
-                                            : Icon(
-                                            Icons.switch_camera)
-                                    ),
+                                            ? Icon(Icons
+                                            .switch_camera_outlined)
+                                            : Icon(Icons.switch_camera)),
                                     //SizedBox(width:size.width*0.3 ,),
                                     InkWell(
                                       onTap: onToggleMute,
                                       child: isMuted
                                           ? Icon(Icons.mic_off_sharp)
-                                          : Icon(
-                                          Icons.mic),
+                                          : Icon(Icons.mic),
                                     ),
                                     InkWell(
                                       onTap: _leaveChannel,
                                       child: Container(
                                         padding: EdgeInsets.all(5),
-                                        margin: EdgeInsets.all(5)
-                                        ,
-                                        child: Icon(Icons.call_end, size: 15,),
+                                        margin: EdgeInsets.all(5),
+                                        child: Icon(
+                                          Icons.call_end,
+                                          size: 15,
+                                        ),
                                         decoration: BoxDecoration(
-                                            borderRadius: BorderRadius.circular(
-                                                20),
-                                            color: Colors.redAccent
-                                        ),),
+                                            borderRadius:
+                                            BorderRadius.circular(20),
+                                            color: Colors.redAccent),
+                                      ),
                                     ),
-
                                   ],
                                 ),
-                              ) : Container(),
+                              )
+                                  : Container(),
+                             hopOn=="tt"? BroadcastScreen2(isBroadcaster: false, channelId: hopMan) : Container(),
                               _renderVideo(
                                   usernamee.toString(), isScreenSharing),
-
                               Expanded(
                                 child: Chat(
                                   channelId: widget.channelId,
                                 ),
                               ),
-
                             ],
                           ),
                         ),
@@ -452,23 +439,61 @@ class _BroadcastScreenState extends State<BroadcastScreen> with WidgetsBindingOb
                     ),
                   ),
                 );
+              } else {
+                return Container();
               }
-              else{
-                return Container() ;
-              }
-            }
-
-        ),
+            }),
       ),
     );
   }
 
   _renderVideo(String name, isScreenSharing) {
     return Container(
-        margin: EdgeInsets.only(bottom: 5),
-        child: AspectRatio(
-          aspectRatio: 8 / 9,
-          child: "${_auth.currentUser!.uid}$name" == widget.channelId
+      margin: EdgeInsets.only(bottom: 5),
+      child: AspectRatio(
+        aspectRatio: 8 / 9,
+        child: "${_auth.currentUser!.uid}$name" == widget.channelId
+            ? isScreenSharing
+            ? kIsWeb
+            ? const RtcLocalView.SurfaceView.screenShare()
+            : const RtcLocalView.TextureView.screenShare()
+            : const RtcLocalView.SurfaceView(
+          zOrderMediaOverlay: true,
+          zOrderOnTop: true,
+        )
+            : isScreenSharing
+            ? kIsWeb
+            ? const RtcLocalView.SurfaceView.screenShare()
+            : const RtcLocalView.TextureView.screenShare()
+            : remoteUid.isNotEmpty
+            ? kIsWeb
+            ? RtcRemoteView.SurfaceView(
+          uid: remoteUid[0],
+          channelId: widget.channelId,
+        )
+            : RtcRemoteView.TextureView(
+          uid: remoteUid[0],
+          channelId: widget.channelId,
+        )
+            : Container(
+          color: Colors.black.withOpacity(0.3),
+          child: Center(
+            child: CircularProgressIndicator(),
+          ),
+        ),
+      ),
+    );
+  }
+
+
+
+  _hopOn(String name, isScreenSharing) {
+    return Container(
+      height: 100,
+      width: 100,
+      margin: EdgeInsets.only(bottom: 5),
+      child:
+          "${_auth.currentUser!.uid}$name" == widget.channelId
               ? isScreenSharing
               ? kIsWeb
               ? const RtcLocalView.SurfaceView.screenShare()
@@ -496,12 +521,22 @@ class _BroadcastScreenState extends State<BroadcastScreen> with WidgetsBindingOb
             child: Center(
               child: CircularProgressIndicator(),
             ),
-          ),),
-
-
-    );
+          ),
+          );
   }
+
+
+
+
+
 }
+
+
+
+
+
+
+
 
 class DraggableCard extends StatefulWidget {
   final Widget child;
@@ -543,7 +578,7 @@ class _DraggableCardState extends State<DraggableCard>
     );
 
     final simulation =
-    SpringSimulation(_spring, 0, 0.0, _normalizeVelocity(velocity, size));
+        SpringSimulation(_spring, 0, 0.0, _normalizeVelocity(velocity, size));
 
     _controller.animateWith(simulation);
   }
@@ -567,7 +602,7 @@ class _DraggableCardState extends State<DraggableCard>
     return GestureDetector(
       onPanStart: (details) => _controller.stop(canceled: true),
       onPanUpdate: (details) => setState(
-            () => _dragAlignment += Alignment(
+        () => _dragAlignment += Alignment(
           details.delta.dx / (size.width / 2),
           details.delta.dy / (size.height / 2),
         ),
@@ -583,7 +618,3 @@ class _DraggableCardState extends State<DraggableCard>
     );
   }
 }
-
-
-
-

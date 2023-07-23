@@ -289,26 +289,26 @@ class _ChatRoomState extends State<ChatRoom> {
               color: Colors.black54,
             ),
             child: Text(
-                'ok',
+             map['time']==null ?"ok" :(map['time'] as Timestamp).toDate().toString().substring(0, 10),
               style: TextStyle(
-                fontSize: 8,
+                fontSize: 6,
                 fontWeight: FontWeight.w500,
                 color: Colors.white,
               ),
             ),
           ),
           Container(
-
-            padding: EdgeInsets.symmetric(vertical: 1, horizontal: 7),
+width: size.width*0.5,
+            padding: EdgeInsets.symmetric(vertical: 4, horizontal: 7),
             decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(15),
-              color: map['sendby'] == _auth.currentUser!.uid ? Colors.green: Colors.amberAccent ,
+              borderRadius: BorderRadius.circular(6),
+              color: map['sendby'] == _auth.currentUser!.uid ? Colors.purpleAccent.shade200: Colors.orangeAccent.shade200,
             ),
             child: Text(
               map['message'],
               style: TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.w500,
+                fontSize: 16,
+                fontWeight: FontWeight.w400,
                 color: Colors.white,
               ),
             ),

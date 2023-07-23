@@ -114,7 +114,9 @@ class FirestoreMethods {
         'uid': _auth.currentUser!.uid,
         'createdAt': DateTime.now(),
         'commentId': commentId,
-        'imageUrl': imageUrl
+        'imageUrl': imageUrl,
+        'hopOn': false,
+        'hopMan':""
       });
     } on FirebaseException catch (e) {
       showSnackBar(context, e.message!);

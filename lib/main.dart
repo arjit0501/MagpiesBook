@@ -60,12 +60,7 @@ class MyApp extends StatelessWidget {
                 backgroundColor: Colors.white,
                 body: Container(
                   child: Center(
-                    child: Container(
-                      decoration: BoxDecoration(
-                        image: DecorationImage(image: Image.asset('images/Maa.png').image)
-                      ),
-
-                    ),
+                    child: CircularProgressIndicator()
                   ),
                 ),
               );
